@@ -142,7 +142,7 @@ class ComplexityChecker(ast.NodeVisitor):
     def _check_loop(self, node: ast.For | ast.AsyncFor) -> None:
         """Зафиксируй нарушение при превышении лимита вложенности циклов."""
         self._loop_depth += 1
-        if self._loop_depth > self.config.max_loop_depth:
+        if self.config.max_loop_depth > 0 and self._loop_depth > self.config.max_loop_depth:
             code = "CG001"
             col = node.col_offset + 1
             if not _is_suppressed(code, node.lineno, self.suppressions):
@@ -184,6 +184,8 @@ class ComplexityChecker(ast.NodeVisitor):
         header: list[int],
     ) -> None:
         """Проверь цикломатическую сложность функции (CG002)."""
+        if self.config.max_complexity <= 0:
+            return
         complexity = _compute_cyclomatic_complexity(node)
         if complexity > self.config.max_complexity:
             code = "CG002"
@@ -203,6 +205,8 @@ class ComplexityChecker(ast.NodeVisitor):
         header: list[int],
     ) -> None:
         """Проверь количество ветвлений в функции (CG003)."""
+        if self.config.max_branches <= 0:
+            return
         branches = _compute_branches(node)
         if branches > self.config.max_branches:
             code = "CG003"
@@ -219,6 +223,8 @@ class ComplexityChecker(ast.NodeVisitor):
         header: list[int],
     ) -> None:
         """Проверь количество точек выхода return в функции (CG004)."""
+        if self.config.max_returns <= 0:
+            return
         returns = _compute_returns(node)
         if returns > self.config.max_returns:
             code = "CG004"
