@@ -1,0 +1,6 @@
+- id: complexity-guard
+  name: complexity-guard
+  description: Guard against high algorithmic complexity, deep loop nesting, excessive branching, and returns.
+  entry: complexity-guard
+  language: python
+  types: [python]

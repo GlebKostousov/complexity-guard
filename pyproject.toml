@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "complexity-guard"
+version = "0.1.0"
+description = "Lightweight zero-dependency linter and pre-commit hook to guard against algorithmic complexity, deep loop nesting, excessive branching, and returns."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Gleb Kostousov", email = "kostousjr@gmail.com" },
+]
+keywords = [
+    "complexity",
+    "mccabe",
+    "linter",
+    "pre-commit",
+    "ast",
+    "algorithmic-complexity",
+    "o1",
+    "loops",
+    "clean-code",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = []
+
+[project.scripts]
+complexity-guard = "complexity_guard.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/GlebKostousov/complexity-guard"
+Repository = "https://github.com/GlebKostousov/complexity-guard.git"
+Issues = "https://github.com/GlebKostousov/complexity-guard/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/complexity_guard"]
+
+[tool.complexity-guard]
+max-loop-depth = 2
+max-complexity = 5
+max-branches = 6
+max-returns = 4
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "build",
+    "dist",
+    ".pytest_cache",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
