@@ -14,7 +14,7 @@ def test_cli_clean_file_returns_zero(tmp_path: Path, capsys) -> None:
     code = run([str(file)])
     assert code == 0
     captured = capsys.readouterr()
-    assert "Нарушений не обнаружено" in captured.err
+    assert "No violations found" in captured.err
 
 
 def test_cli_violation_returns_one(tmp_path: Path, capsys) -> None:
@@ -36,6 +36,28 @@ def triple_loop(x):
     captured = capsys.readouterr()
     assert "CG001" in captured.out
     assert "Loop nesting depth 3 exceeds limit of 2" in captured.out
+    assert "Found 1 violation" in captured.err
+
+
+def test_cli_lang_ru(tmp_path: Path, capsys) -> None:
+    """Проверь локализованный вывод на русском языке при флаге --lang=ru."""
+    file = tmp_path / "dirty.py"
+    file.write_text(
+        """
+def triple_loop(x):
+    for a in x:
+        for b in a:
+            for c in b:
+                pass
+""",
+        encoding="utf-8",
+    )
+
+    code = run(["--lang=ru", str(file)])
+    assert code == 1
+    captured = capsys.readouterr()
+    assert "CG001" in captured.out
+    assert "Глубина вложенных циклов 3 превышает максимум 2" in captured.out
     assert "Найдено нарушений: 1" in captured.err
 
 
@@ -102,7 +124,7 @@ def triple(x):
     code = run(["--exclude=ignored", str(tmp_path)])
     assert code == 0
     captured = capsys.readouterr()
-    assert "Нарушений не обнаружено" in captured.err
+    assert "No violations found" in captured.err
 
 
 def test_cli_quiet_mode(tmp_path: Path, capsys) -> None:

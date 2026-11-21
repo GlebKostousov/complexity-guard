@@ -21,6 +21,22 @@ _DECISION_NODES = (
 )
 
 
+_MESSAGES: dict[str, dict[str, str]] = {
+    "ru": {
+        "CG001": "Глубина вложенных циклов {depth} превышает максимум {limit} (вынесите во вспомогательную функцию или используйте O(1) поиск через set/dict)",
+        "CG002": "Функция '{name}' имеет цикломатическую сложность {complexity} (лимит: {limit})",
+        "CG003": "Функция '{name}' содержит {branches} ветвлений (лимит: {limit})",
+        "CG004": "Функция '{name}' содержит {returns} точек выхода return (лимит: {limit})",
+    },
+    "en": {
+        "CG001": "Loop nesting depth {depth} exceeds limit of {limit} (consider extracting to a helper or using O(1) lookup/flat map)",
+        "CG002": "Function '{name}' has cyclomatic complexity of {complexity} (limit: {limit})",
+        "CG003": "Function '{name}' has {branches} branches (limit: {limit})",
+        "CG004": "Function '{name}' has {returns} returns (limit: {limit})",
+    },
+}
+
+
 @dataclass(frozen=True)
 class Violation:
     """Храни данные об обнаруженном нарушении правила сложности."""
@@ -131,6 +147,12 @@ class ComplexityChecker(ast.NodeVisitor):
         self.violations: list[Violation] = []
         self._loop_depth = 0
 
+    def _msg(self, code: str, **kwargs: object) -> str:
+        """Сформируй текст сообщения на настроенном языке (ru/en)."""
+        lang = self.config.lang if self.config.lang in _MESSAGES else "en"
+        template = _MESSAGES[lang].get(code, "")
+        return template.format(**kwargs)
+
     def visit_For(self, node: ast.For) -> None:
         """Проверь глубину синхронного цикла for."""
         self._check_loop(node)
@@ -146,11 +168,7 @@ class ComplexityChecker(ast.NodeVisitor):
             code = "CG001"
             col = node.col_offset + 1
             if not _is_suppressed(code, node.lineno, self.suppressions):
-                msg = (
-                    f"Loop nesting depth {self._loop_depth} exceeds limit of "
-                    f"{self.config.max_loop_depth} (consider extracting to a helper "
-                    f"or using O(1) lookup/flat map)"
-                )
+                msg = self._msg(code, depth=self._loop_depth, limit=self.config.max_loop_depth)
                 self.violations.append(
                     Violation(code=code, line=node.lineno, column=col, message=msg, symbol="<loop>")
                 )
@@ -190,10 +208,7 @@ class ComplexityChecker(ast.NodeVisitor):
         if complexity > self.config.max_complexity:
             code = "CG002"
             if not _is_suppressed(code, node.lineno, self.suppressions, header):
-                msg = (
-                    f"Function '{node.name}' has cyclomatic complexity of "
-                    f"{complexity} (limit: {self.config.max_complexity})"
-                )
+                msg = self._msg(code, name=node.name, complexity=complexity, limit=self.config.max_complexity)
                 self.violations.append(
                     Violation(code=code, line=node.lineno, column=col, message=msg, symbol=node.name)
                 )
@@ -211,7 +226,7 @@ class ComplexityChecker(ast.NodeVisitor):
         if branches > self.config.max_branches:
             code = "CG003"
             if not _is_suppressed(code, node.lineno, self.suppressions, header):
-                msg = f"Function '{node.name}' has {branches} branches (limit: {self.config.max_branches})"
+                msg = self._msg(code, name=node.name, branches=branches, limit=self.config.max_branches)
                 self.violations.append(
                     Violation(code=code, line=node.lineno, column=col, message=msg, symbol=node.name)
                 )
@@ -229,7 +244,7 @@ class ComplexityChecker(ast.NodeVisitor):
         if returns > self.config.max_returns:
             code = "CG004"
             if not _is_suppressed(code, node.lineno, self.suppressions, header):
-                msg = f"Function '{node.name}' has {returns} returns (limit: {self.config.max_returns})"
+                msg = self._msg(code, name=node.name, returns=returns, limit=self.config.max_returns)
                 self.violations.append(
                     Violation(code=code, line=node.lineno, column=col, message=msg, symbol=node.name)
                 )

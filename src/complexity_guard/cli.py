@@ -130,6 +130,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Путь к конфигурационному файлу pyproject.toml.",
     )
     parser.add_argument(
+        "--lang",
+        choices=["ru", "en"],
+        default=None,
+        help="Язык сообщений об ошибках и сводки (ru или en, по умолчанию ru).",
+    )
+    parser.add_argument(
         "--format",
         choices=["text", "github", "json"],
         default="text",
@@ -182,7 +188,7 @@ def _output_github(violations: list[tuple[Path, Violation]]) -> None:
         sys.stdout.write(f"::error file={p},line={v.line},col={v.column}::{v.code} {v.message}\n")
 
 
-def _output_text(violations: list[tuple[Path, Violation]], files_count: int, quiet: bool) -> None:
+def _output_text(violations: list[tuple[Path, Violation]], files_count: int, quiet: bool, lang: str = "en") -> None:
     """Выведи нарушения в стандартном формате UNIX."""
     for p, v in violations:
         sys.stdout.write(f"{v.format(p)}\n")
@@ -190,21 +196,29 @@ def _output_text(violations: list[tuple[Path, Violation]], files_count: int, qui
     if not quiet:
         if violations:
             files_with_errors = len({p for p, _ in violations})
-            sys.stderr.write(
-                f"\nНайдено нарушений: {len(violations)} в {files_with_errors} файл(ах).\n"
-            )
+            if lang == "ru":
+                sys.stderr.write(
+                    f"\nНайдено нарушений: {len(violations)} в {files_with_errors} файл(ах).\n"
+                )
+            else:
+                sys.stderr.write(
+                    f"\nFound {len(violations)} violation(s) in {files_with_errors} file(s).\n"
+                )
         else:
-            sys.stderr.write(f"Проверено файлов: {files_count}. Нарушений не обнаружено.\n")
+            if lang == "ru":
+                sys.stderr.write(f"Проверено файлов: {files_count}. Нарушений не обнаружено.\n")
+            else:
+                sys.stderr.write(f"Checked {files_count} file(s). No violations found.\n")
 
 
-def _output_results(fmt: str, violations: list[tuple[Path, Violation]], files_count: int, quiet: bool) -> None:
+def _output_results(fmt: str, violations: list[tuple[Path, Violation]], files_count: int, quiet: bool, lang: str = "en") -> None:
     """Направь вывод нарушений в соответствующий форматтер."""
     if fmt == "json":
         _output_json(violations)
     elif fmt == "github":
         _output_github(violations)
     else:
-        _output_text(violations, files_count, quiet)
+        _output_text(violations, files_count, quiet, lang)
 
 
 def _parse_excludes_arg(raw: Sequence[str] | None) -> list[str] | None:
@@ -229,12 +243,13 @@ def run(argv: Sequence[str] | None = None) -> int:
         max_branches=args.max_branches,
         max_returns=args.max_returns,
         strict=args.strict,
+        lang=args.lang,
         exclude=_parse_excludes_arg(args.exclude),
     )
 
     files = collect_python_files(args.paths, config)
     violations = _collect_all_violations(files, config)
-    _output_results(args.format, violations, len(files), args.quiet)
+    _output_results(args.format, violations, len(files), args.quiet, config.lang)
     return 1 if violations else 0
 
 

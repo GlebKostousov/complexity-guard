@@ -32,6 +32,7 @@ class Config:
     max_branches: int = 6
     max_returns: int = 4
     strict: bool = False
+    lang: str = "en"
     exclude: list[str] = field(default_factory=lambda: list(DEFAULT_EXCLUDES))
 
     def apply_strict_mode(self) -> None:
@@ -143,6 +144,8 @@ def _apply_dict_overrides(cfg: Config, data: dict[str, Any]) -> None:
             setattr(cfg, key, int(data[key]))
     if "strict" in data:
         cfg.strict = bool(data["strict"])
+    if "lang" in data:
+        cfg.lang = str(data["lang"]).lower()
     if isinstance(data.get("exclude"), list):
         cfg.exclude = list(data["exclude"])
 
@@ -161,6 +164,7 @@ def get_config(
     max_branches: int | None = None,
     max_returns: int | None = None,
     strict: bool | None = None,
+    lang: str | None = None,
     exclude: Sequence[str] | None = None,
 ) -> Config:
     """Собери итоговую конфигурацию с приоритетом CLI-флагов над pyproject.toml."""
@@ -175,6 +179,7 @@ def get_config(
         "max_branches": max_branches,
         "max_returns": max_returns,
         "strict": strict,
+        "lang": lang,
         "exclude": list(exclude) if exclude is not None else None,
     }
     _apply_cli_overrides(cfg, cli_values)
