@@ -139,3 +139,19 @@ def process(matrix):
     violations = check_source(source)
     cg001 = [v for v in violations if v.code == "CG001"]
     assert len(cg001) == 1
+
+
+def test_suppress_cg005_cg006_cg007_cg008() -> None:
+    """Проверь подавление новых правил алгоритмической сложности."""
+    source = """
+def process(items: list[int], target: list[int]):
+    s = ""
+    for x in items:
+        if x in target:  # noqa: CG005
+            items.index(x)  # noqa: CG006
+            s += "a"  # noqa: CG007
+
+    grid = [[val for val in row] for row in items]  # noqa: CG008
+"""
+    violations = check_source(source)
+    assert len(violations) == 0

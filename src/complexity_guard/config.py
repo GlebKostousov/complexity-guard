@@ -19,7 +19,19 @@ DEFAULT_EXCLUDES = [
     "*.egg-info",
 ]
 
-_INT_FIELDS = ("max_loop_depth", "max_complexity", "max_branches", "max_returns")
+_INT_FIELDS = (
+    "max_loop_depth",
+    "max_complexity",
+    "max_branches",
+    "max_returns",
+    "max_comprehension_depth",
+)
+_BOOL_FIELDS = (
+    "strict",
+    "check_linear_in_loop",
+    "check_quadratic_methods",
+    "check_string_concat",
+)
 _BOOL_MAP = {"true": True, "false": False}
 
 
@@ -31,6 +43,10 @@ class Config:
     max_complexity: int = 5
     max_branches: int = 6
     max_returns: int = 4
+    check_linear_in_loop: bool = True
+    check_quadratic_methods: bool = True
+    check_string_concat: bool = True
+    max_comprehension_depth: int = 1
     strict: bool = False
     lang: str = "en"
     exclude: list[str] = field(default_factory=lambda: list(DEFAULT_EXCLUDES))
@@ -41,6 +57,7 @@ class Config:
             self.max_complexity = min(self.max_complexity, 3)
             self.max_branches = min(self.max_branches, 4)
             self.max_returns = min(self.max_returns, 3)
+            self.max_comprehension_depth = min(self.max_comprehension_depth, 1)
 
 
 def _parse_toml_list(val: str) -> list[str]:
@@ -137,13 +154,21 @@ def find_pyproject_toml(start_dir: Path | None = None) -> Path | None:
     return None
 
 
+def _apply_bool_overrides(cfg: Config, data: dict[str, Any]) -> None:
+    """Запиши логические параметры из словаря в конфигурацию."""
+    for key in _BOOL_FIELDS:
+        if key in data:
+            val = data[key]
+            effective = _BOOL_MAP[val.lower()] if isinstance(val, str) and val.lower() in _BOOL_MAP else bool(val)
+            setattr(cfg, key, effective)
+
+
 def _apply_dict_overrides(cfg: Config, data: dict[str, Any]) -> None:
     """Запиши значения из словаря TOML в объект конфигурации."""
     for key in _INT_FIELDS:
         if key in data:
             setattr(cfg, key, int(data[key]))
-    if "strict" in data:
-        cfg.strict = bool(data["strict"])
+    _apply_bool_overrides(cfg, data)
     if "lang" in data:
         cfg.lang = str(data["lang"]).lower()
     if isinstance(data.get("exclude"), list):
@@ -163,6 +188,10 @@ def get_config(
     max_complexity: int | None = None,
     max_branches: int | None = None,
     max_returns: int | None = None,
+    check_linear_in_loop: bool | None = None,
+    check_quadratic_methods: bool | None = None,
+    check_string_concat: bool | None = None,
+    max_comprehension_depth: int | None = None,
     strict: bool | None = None,
     lang: str | None = None,
     exclude: Sequence[str] | None = None,
@@ -178,6 +207,10 @@ def get_config(
         "max_complexity": max_complexity,
         "max_branches": max_branches,
         "max_returns": max_returns,
+        "check_linear_in_loop": check_linear_in_loop,
+        "check_quadratic_methods": check_quadratic_methods,
+        "check_string_concat": check_string_concat,
+        "max_comprehension_depth": max_comprehension_depth,
         "strict": strict,
         "lang": lang,
         "exclude": list(exclude) if exclude is not None else None,

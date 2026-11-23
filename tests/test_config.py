@@ -94,3 +94,23 @@ def test_find_pyproject_toml(tmp_path: Path) -> None:
     found = find_pyproject_toml(start_dir=sub)
     assert found is not None
     assert found.resolve() == toml.resolve()
+
+
+def test_config_new_rules_defaults_and_overrides(tmp_path: Path) -> None:
+    """Проверь значения по умолчанию и переопределение новых правил сложности."""
+    toml_file = tmp_path / "pyproject.toml"
+    toml_file.write_text(
+        """
+[tool.complexity-guard]
+check-linear-in-loop = false
+check-quadratic-methods = false
+check-string-concat = false
+max-comprehension-depth = 2
+""",
+        encoding="utf-8",
+    )
+    cfg = get_config(config_file=toml_file)
+    assert cfg.check_linear_in_loop is False
+    assert cfg.check_quadratic_methods is False
+    assert cfg.check_string_concat is False
+    assert cfg.max_comprehension_depth == 2

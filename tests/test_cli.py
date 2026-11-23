@@ -137,3 +137,34 @@ def test_cli_quiet_mode(tmp_path: Path, capsys) -> None:
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == ""
+
+
+def test_cli_flags_disable_new_rules(tmp_path: Path, capsys) -> None:
+    """Проверь отключение новых правил через CLI флаги."""
+    file = tmp_path / "checks.py"
+    file.write_text(
+        """
+def process(items: list[int], targets: list[int]):
+    s = ""
+    for x in items:
+        if x in targets:
+            items.index(x)
+            s += "a"
+    grid = [[val for val in row] for row in items]
+""",
+        encoding="utf-8",
+    )
+
+    # All enabled by default -> triggers violations
+    code_default = run([str(file)])
+    assert code_default == 1
+
+    # Disable all new rules via flags
+    code_disabled = run([
+        "--no-linear-in-loop",
+        "--no-quadratic-methods",
+        "--no-string-concat",
+        "--max-comprehension-depth=2",
+        str(file),
+    ])
+    assert code_disabled == 0

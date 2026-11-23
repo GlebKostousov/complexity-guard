@@ -3,7 +3,7 @@
 from .checker import ComplexityChecker, Violation, check_file, check_source
 from .config import Config
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "ComplexityChecker",
     "Config",

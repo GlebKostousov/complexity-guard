@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "complexity-guard"
-version = "0.1.0"
+version = "0.2.0"
 description = "Lightweight zero-dependency linter and pre-commit hook to guard against algorithmic complexity, deep loop nesting, excessive branching, and returns."
 readme = "README.md"
 requires-python = ">=3.10"

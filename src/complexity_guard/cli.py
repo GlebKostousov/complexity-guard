@@ -113,10 +113,37 @@ def build_parser() -> argparse.ArgumentParser:
         help="Максимальное число return statements в функции (по умолчанию: 4).",
     )
     parser.add_argument(
+        "--no-linear-in-loop",
+        dest="check_linear_in_loop",
+        action="store_false",
+        default=None,
+        help="Отключить проверку линейного поиска 'in list' в циклах (CG005).",
+    )
+    parser.add_argument(
+        "--no-quadratic-methods",
+        dest="check_quadratic_methods",
+        action="store_false",
+        default=None,
+        help="Отключить проверку вызовов методов O(N) (.index, .count, .remove) в циклах (CG006).",
+    )
+    parser.add_argument(
+        "--no-string-concat",
+        dest="check_string_concat",
+        action="store_false",
+        default=None,
+        help="Отключить проверку конкатенации строк '+=' в циклах (CG007).",
+    )
+    parser.add_argument(
+        "--max-comprehension-depth",
+        type=int,
+        default=None,
+        help="Максимальная глубина вложенности генераторов/списковых включений (CG008, по умолчанию: 1).",
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         default=None,
-        help="Включить строгий режим (max-complexity=3, max-branches=4, max-returns=3).",
+        help="Включить строгий режим (max-complexity=3, max-branches=4, max-returns=3, max-comprehension-depth=1).",
     )
     parser.add_argument(
         "--exclude",
@@ -188,27 +215,31 @@ def _output_github(violations: list[tuple[Path, Violation]]) -> None:
         sys.stdout.write(f"::error file={p},line={v.line},col={v.column}::{v.code} {v.message}\n")
 
 
+def _output_summary(violations: list[tuple[Path, Violation]], files_count: int, lang: str) -> None:
+    """Выведи сводную статистику проверки."""
+    if violations:
+        files_with_errors = len({p for p, _ in violations})
+        msg = (
+            f"\nНайдено нарушений: {len(violations)} в {files_with_errors} файл(ах).\n"
+            if lang == "ru"
+            else f"\nFound {len(violations)} violation(s) in {files_with_errors} file(s).\n"
+        )
+    else:
+        msg = (
+            f"Проверено файлов: {files_count}. Нарушений не обнаружено.\n"
+            if lang == "ru"
+            else f"Checked {files_count} file(s). No violations found.\n"
+        )
+    sys.stderr.write(msg)
+
+
 def _output_text(violations: list[tuple[Path, Violation]], files_count: int, quiet: bool, lang: str = "en") -> None:
     """Выведи нарушения в стандартном формате UNIX."""
     for p, v in violations:
         sys.stdout.write(f"{v.format(p)}\n")
 
     if not quiet:
-        if violations:
-            files_with_errors = len({p for p, _ in violations})
-            if lang == "ru":
-                sys.stderr.write(
-                    f"\nНайдено нарушений: {len(violations)} в {files_with_errors} файл(ах).\n"
-                )
-            else:
-                sys.stderr.write(
-                    f"\nFound {len(violations)} violation(s) in {files_with_errors} file(s).\n"
-                )
-        else:
-            if lang == "ru":
-                sys.stderr.write(f"Проверено файлов: {files_count}. Нарушений не обнаружено.\n")
-            else:
-                sys.stderr.write(f"Checked {files_count} file(s). No violations found.\n")
+        _output_summary(violations, files_count, lang)
 
 
 def _output_results(fmt: str, violations: list[tuple[Path, Violation]], files_count: int, quiet: bool, lang: str = "en") -> None:
@@ -242,6 +273,10 @@ def run(argv: Sequence[str] | None = None) -> int:
         max_complexity=args.max_complexity,
         max_branches=args.max_branches,
         max_returns=args.max_returns,
+        check_linear_in_loop=args.check_linear_in_loop,
+        check_quadratic_methods=args.check_quadratic_methods,
+        check_string_concat=args.check_string_concat,
+        max_comprehension_depth=args.max_comprehension_depth,
         strict=args.strict,
         lang=args.lang,
         exclude=_parse_excludes_arg(args.exclude),
